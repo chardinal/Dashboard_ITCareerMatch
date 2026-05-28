@@ -168,64 +168,67 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Load Da# ── Sidebar BQ Navigation ─────────────────────────────────────────────────────
+# ── Load Data ─────────────────────────────────────────────────────────────────
+
+@st.cache_data(show_spinner=False)
+def get_all_data():
+    return load_cv(), load_job(), load_glints()
+
+with st.spinner("Memuat dataset…"):
+    try:
+        df_cv, df_job, df_glints = get_all_data()
+        data_loaded = True
+    except FileNotFoundError as e:
+        st.error(f"**Dataset tidak ditemukan:** {e}")
+        st.info("Pastikan folder `D:\\DBS_Foundation-2026\\data_clean_DS` berisi file Dataset_CV, Dataset_Job, dan Glints_Job.")
+        st.stop()
+
+# ── Sidebar Filters ───────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("## Navigasi Analisis")
+    st.markdown("## Filter & Info")
     st.markdown("---")
-    
-    bq_options = [
-        "BQ 1: Distribusi Pendidikan Kandidat",
-        "BQ 2: Level Pengalaman Lowongan",
-        "BQ 3: Top 5 Kota & Sistem Kerja",
-        "BQ 4: Median Gaji per Kategori",
-        "BQ 5: Gap Pendidikan CV vs Job",
-        "BQ 6: Top 15 Skill Terpopuler",
-        "BQ 7: Rata-rata Skill vs Pengalaman",
-        "BQ 8: Dominasi Tipe Waktu Kerja",
-        "BQ 9: Batasan Gender/Usia",
-        "BQ 10: Gaji per Sistem Kerja"
-    ]
-    selected_bq_name = st.selectbox(
-        "Pilih Pertanyaan Bisnis (BQ):",
-        options=bq_options,
-        index=0
+
+    st.markdown("### Dataset Overview")
+    col_a, col_b = st.columns(2)
+    col_a.metric("Dataset_CV",  f"{len(df_cv):,} baris")
+    col_b.metric("Dataset_Job", f"{len(df_job):,} baris")
+    st.metric("Glints_Job", f"{len(df_glints):,} baris")
+
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='background:rgba(99,102,241,0.12); border-left:3px solid #6366f1;
+                    border-radius:0 8px 8px 0; padding:0.6rem 0.8rem; margin-bottom:0.5rem;'>
+            <b style='color:#a5b4fc;'>Catatan Filter</b><br>
+            <span style='color:#94a3b8; font-size:0.8rem;'>
+                Filter di bawah hanya berlaku untuk data <b>Glints_Job</b>.<br>
+                BQ 1, 2, 5, 7, 9 menggunakan Dataset_CV / Dataset_Job dan
+                <u>tidak terpengaruh</u> oleh filter ini.
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
-    selected_bq_idx = bq_options.index(selected_bq_name)
-
-# ── Header Filters (Main Content Area) ────────────────────────────────────────
-
-# Tentukan apakah BQ aktif menggunakan dataset Glints_Job
-uses_glints_filters = selected_bq_idx in [2, 3, 5, 7, 9]
-
-selected_cities = []
-selected_roles = []
-selected_worksys = []
-
-if uses_glints_filters:
-    st.markdown("""
-    <div style='background:rgba(99,102,241,0.08); border-left:4px solid #6366f1; border-radius:8px; padding:0.8rem 1.2rem; margin-bottom:1rem;'>
-        <b style='color:#a5b4fc; font-size:1.05rem;'>🔍 Filter Analisis Glints_Job</b><br>
-        <span style='color:#94a3b8; font-size:0.82rem;'>
-            Filter di bawah ini berlaku untuk data Glints_Job (BQ 3, 4, 6, 8, 10) secara real-time.
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
-    
+    st.markdown("### Filter Kota (Glints)")
     all_cities = sorted(df_glints[_CITY_COL].dropna().unique().tolist())
-    all_roles = sorted(df_glints[GLINTS_ROLE_COL].dropna().unique().tolist())
-    all_worksys = sorted(df_glints[_WORKSYS_COL].dropna().unique().tolist())
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        selected_cities = st.multiselect("Kota (kosong = semua):", options=all_cities, default=[], key="hdr_cities")
-    with col2:
-        selected_roles = st.multiselect("Kategori Peran (kosong = semua):", options=all_roles, default=[], key="hdr_roles")
-    with col3:
-        selected_worksys = st.multiselect("Sistem Kerja (kosong = semua):", options=all_worksys, default=[], key="hdr_worksys")
-    st.markdown("---")
+    selected_cities = st.multiselect("Pilih kota (kosong = semua)", options=all_cities, default=[])
 
-# Terapkan filter ke df_g
+    st.markdown("### Filter Kategori Peran (Glints)")
+    all_roles = sorted(df_glints[GLINTS_ROLE_COL].dropna().unique().tolist())
+    selected_roles = st.multiselect("Pilih kategori peran (kosong = semua)", options=all_roles, default=[])
+
+    st.markdown("### Filter Sistem Kerja (Glints)")
+    all_worksys = sorted(df_glints[_WORKSYS_COL].dropna().unique().tolist())
+    selected_worksys = st.multiselect("Pilih sistem kerja (kosong = semua)", options=all_worksys, default=[])
+
+    st.markdown("---")
+    st.markdown(
+        "<small style='color:#4a5568'>Filter berlaku pada BQ 3, 4, 6, 8, 10</small>",
+        unsafe_allow_html=True
+    )
+
+# Terapkan filter
 df_g = df_glints.copy()
 if selected_cities:
     df_g = df_g[df_g[_CITY_COL].isin(selected_cities)]
@@ -234,22 +237,28 @@ if selected_roles:
 if selected_worksys:
     df_g = df_g[df_g[_WORKSYS_COL].isin(selected_worksys)]
 
-# ── Render BQ Sections ────────────────────────────────────────────────────────
+# ── Tabs ──────────────────────────────────────────────────────────────────────
 
-# BQ 1 — Distribusi Tingkat Pendidikan Kandidat
-if selected_bq_idx == 0:
+tab_labels = [
+    "BQ1 · Pendidikan CV",
+    "BQ2 · Level Lowongan",
+    "BQ3 · Kota & Kerja",
+    "BQ4 · Median Gaji",
+    "BQ5 · Gap Pendidikan",
+    "BQ6 · Top Skill",
+    "BQ7 · Skill vs Exp",
+    "BQ8 · Tipe Waktu",
+    "BQ9 · Restriksi",
+    "BQ10 · Gaji × Sistem Kerja",
+]
+
+tabs = st.tabs(tab_labels)
+
+# ── Tab 1 — BQ 1 ──────────────────────────────────────────────────────────────
+with tabs[0]:
     st.markdown('<span class="bq-badge">BQ 1</span>', unsafe_allow_html=True)
     st.subheader("Distribusi Tingkat Pendidikan Kandidat")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 1:</b><br>
-            Bagaimana distribusi tingkat pendidikan kandidat dalam Dataset_CV, dan apakah S1 mendominasi lebih dari 50% dari total kandidat?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Dataset_CV · Tidak terpengaruh filter")
+    st.caption("Sumber data: Dataset_CV · Tidak terpengaruh filter sidebar")
 
     fig1, m1 = fig_bq1(df_cv)
     st.plotly_chart(fig1, use_container_width=True)
@@ -271,20 +280,11 @@ if selected_bq_idx == 0:
         - Recruiter sebaiknya tidak over-filter pada gelar jika fokus pada skill.
         """)
 
-# BQ 2 — Distribusi Level Pengalaman Lowongan
-elif selected_bq_idx == 1:
+# ── Tab 2 — BQ 2 ──────────────────────────────────────────────────────────────
+with tabs[1]:
     st.markdown('<span class="bq-badge">BQ 2</span>', unsafe_allow_html=True)
-    st.subheader("Distribusi Level Pengalaman Lowongan")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 2:</b><br>
-            Dari seluruh lowongan di Dataset_Job, berapa persen yang menargetkan kandidat entry-level (0–2 tahun) dibandingkan mid-level (2–5 tahun) dan senior (5+ tahun), kemudian apakah entry-level mendominasi lebih dari 40% dari total lowongan?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Dataset_Job · Tidak terpengaruh filter")
+    st.subheader("Distribusi Level Pengalaman yang Dibutuhkan Lowongan")
+    st.caption("Sumber data: Dataset_Job · Tidak terpengaruh filter sidebar")
 
     fig2, m2 = fig_bq2(df_job)
     st.plotly_chart(fig2, use_container_width=True)
@@ -306,20 +306,11 @@ elif selected_bq_idx == 1:
         - Kandidat 2–5 tahun pengalaman bisa menjadi "sweet spot" rekrutmen.
         """)
 
-# BQ 3 — Top 5 Kota & Komposisi Sistem Kerja
-elif selected_bq_idx == 2:
+# ── Tab 3 — BQ 3 ──────────────────────────────────────────────────────────────
+with tabs[2]:
     st.markdown('<span class="bq-badge">BQ 3</span>', unsafe_allow_html=True)
     st.subheader("Top 5 Kota & Komposisi Sistem Kerja (Glints_Job)")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 3:</b><br>
-            Dari 565 lowongan di Glints_Job, kota mana yang masuk top 5 terbanyak, dan bagaimana komposisi sistem kerja (WFO/WFH/Hybrid) di masing-masing kota tersebut?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Glints_Job · Filter header aktif")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif")
 
     fig3, m3 = fig_bq3(df_g)
     st.plotly_chart(fig3, use_container_width=True)
@@ -336,20 +327,11 @@ elif selected_bq_idx == 2:
         - Kandidat di luar Jabodetabek bisa menargetkan lowongan WFH/Hybrid.
         """)
 
-# BQ 4 — Median Gaji per Kategori Peran
-elif selected_bq_idx == 3:
+# ── Tab 4 — BQ 4 ──────────────────────────────────────────────────────────────
+with tabs[3]:
     st.markdown('<span class="bq-badge">BQ 4</span>', unsafe_allow_html=True)
-    st.subheader("Median Gaji per Kategori Peran")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 4:</b><br>
-            Dari kategori peran di Glints_Job yang memiliki minimal 5 lowongan, mana 10 peran dengan median gaji tertinggi dan terendah (diluar perusahaan yang tidak menampilkan gaji), dan seberapa lebar rentang gajinya?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Glints_Job · Filter header aktif · Hanya kategori dengan data gaji")
+    st.subheader("Median Gaji per Kategori Peran — Top 10 & Bottom 10")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif · Hanya kategori ≥ n lowongan dengan data gaji")
 
     min_listing = st.slider("Minimal jumlah lowongan per kategori:", 2, 20, 5, key="bq4_slider")
 
@@ -377,20 +359,11 @@ elif selected_bq_idx == 3:
         - Kandidat dapat menggunakan data ini untuk benchmark ekspektasi gaji.
         """)
 
-# BQ 5 — Gap Distribusi Pendidikan CV vs Job
-elif selected_bq_idx == 4:
+# ── Tab 5 — BQ 5 ──────────────────────────────────────────────────────────────
+with tabs[4]:
     st.markdown('<span class="bq-badge">BQ 5</span>', unsafe_allow_html=True)
     st.subheader("Gap Distribusi Pendidikan: Kandidat (CV) vs. Syarat Lowongan (Job)")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 5:</b><br>
-            Bagaimana perbandingan distribusi tingkat pendidikan antara kandidat (Dataset_CV) dan syarat minimum lowongan (Dataset_Job) secara berdampingan per level pendidikan serta di level mana selisih persentase antara keduanya paling besar (>15 poin)?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Dataset_CV & Dataset_Job · Tidak terpengaruh filter")
+    st.caption("Sumber data: Dataset_CV & Dataset_Job · Tidak terpengaruh filter sidebar")
 
     fig5, m5 = fig_bq5(df_cv, df_job)
     st.plotly_chart(fig5, use_container_width=True)
@@ -414,20 +387,11 @@ elif selected_bq_idx == 4:
         - Informasi ini berguna untuk lembaga pendidikan dan pembuat kebijakan ketenagakerjaan.
         """)
 
-# BQ 6 — Top 15 Skill Paling Sering di Glints_Job
-elif selected_bq_idx == 5:
+# ── Tab 6 — BQ 6 ──────────────────────────────────────────────────────────────
+with tabs[5]:
     st.markdown('<span class="bq-badge">BQ 6</span>', unsafe_allow_html=True)
     st.subheader("Top 15 Skill Paling Sering di Lowongan Glints")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 6:</b><br>
-            Dari seluruh lowongan di Glints_Job, apa 15 skill yang paling sering muncul di kolom skill (dihitung setelah split koma), dan apakah ada 1 skill yang muncul di lebih dari 30% total lowongan sehingga bisa disebut skill dominan pasar IT?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Glints_Job · Filter header aktif · Garis merah = threshold 30%")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif · Garis merah = threshold 30%")
 
     try:
         fig6, m6 = fig_bq6(df_g)
@@ -457,20 +421,11 @@ elif selected_bq_idx == 5:
         - Lembaga pelatihan bisa gunakan data ini sebagai kurikulum prioritas.
         """)
 
-# BQ 7 — Rata-rata Skill vs Pengalaman (Dataset_CV)
-elif selected_bq_idx == 6:
+# ── Tab 7 — BQ 7 ──────────────────────────────────────────────────────────────
+with tabs[6]:
     st.markdown('<span class="bq-badge">BQ 7</span>', unsafe_allow_html=True)
     st.subheader("Rata-rata Jumlah Skill per Bucket Pengalaman (Dataset_CV)")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 7:</b><br>
-            Dari kandidat di Dataset_CV, berapa rata-rata jumlah skill per bucket pengalaman, dan apakah kandidat senior (5+ tahun) memiliki rata-rata skill minimal 2x lebih banyak dibanding (dihitung dari jumlah skill per baris setelah split koma di kolom skill) entry-level (0–1 tahun)?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Dataset_CV · Tidak terpengaruh filter · Error bar = standar deviasi")
+    st.caption("Sumber data: Dataset_CV · Tidak terpengaruh filter sidebar · Error bar = standar deviasi")
 
     try:
         fig7, m7 = fig_bq7(df_cv)
@@ -501,20 +456,11 @@ elif selected_bq_idx == 6:
         - Data berguna untuk desain program mentoring & jenjang karir.
         """)
 
-# BQ 8 — Dominasi Tipe Waktu Kerja per Kategori Peran
-elif selected_bq_idx == 7:
+# ── Tab 8 — BQ 8 ──────────────────────────────────────────────────────────────
+with tabs[7]:
     st.markdown('<span class="bq-badge">BQ 8</span>', unsafe_allow_html=True)
     st.subheader("Dominasi Tipe Waktu Kerja per Kategori Peran (Glints_Job)")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 8:</b><br>
-            Dari 45 kategori peran di Glints_Job, apakah tipe waktu kerja Penuh Waktu mendominasi lebih dari 70% di setiap kategori, atau ada kategori tertentu yang justru didominasi Magang/Freelance/Kontrak?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Glints_Job · Filter header aktif · Garis merah = threshold 70% Penuh Waktu")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif · Garis merah = threshold 70% Penuh Waktu")
 
     try:
         fig8, m8 = fig_bq8(df_g)
@@ -544,20 +490,11 @@ elif selected_bq_idx == 7:
         - Kontrak tinggi bisa mengindikasikan pekerjaan musiman atau project IT.
         """)
 
-# BQ 9 — Lowongan dengan Persyaratan Gender/Usia (Dataset_Job)
-elif selected_bq_idx == 8:
+# ── Tab 9 — BQ 9 ──────────────────────────────────────────────────────────────
+with tabs[8]:
     st.markdown('<span class="bq-badge">BQ 9</span>', unsafe_allow_html=True)
     st.subheader("Lowongan dengan Persyaratan Gender atau Usia Spesifik")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 9:</b><br>
-            Dari seluruh lowongan di Dataset_Job, berapa persen yang masih mencantumkan persyaratan gender atau usia spesifik, dan posisi apa yang paling sering membatasinya, serta apakah total lowongan yang membatasi melebihi 20% dari keseluruhan?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Dataset_Job · Tidak terpengaruh filter · Threshold = 20% dari total lowongan")
+    st.caption("Sumber data: Dataset_Job · Tidak terpengaruh filter sidebar · Threshold = 20% dari total lowongan")
 
     try:
         fig9_pie, fig9_bar, m9 = fig_bq9(df_job)
@@ -594,20 +531,11 @@ elif selected_bq_idx == 8:
         - Data ini penting untuk laporan Diversity & Inclusion (D&I) dalam HR analytics.
         """)
 
-# BQ 10 — Gaji per Sistem Kerja (Glints_Job)
-elif selected_bq_idx == 9:
+# ── Tab 10 — BQ 10 ───────────────────────────────────────────────────────────
+with tabs[9]:
     st.markdown('<span class="bq-badge">BQ 10</span>', unsafe_allow_html=True)
-    st.subheader("Perbandingan Median Gaji WFO vs. WFH vs. Hybrid per Kategori")
-    st.markdown(
-        """
-        <div class="conclusion-box" style="margin-bottom: 1.2rem;">
-            <b>Pertanyaan Bisnis BQ 10:</b><br>
-            Dari 10 kategori peran terbanyak di Glints_Job, bagaimana perbandingan median gaji antara lowongan WFO, WFH, dan Hybrid?
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption("Sumber data: Glints_Job · Filter header aktif · 10 kategori peran terbanyak")
+    st.subheader("Perbandingan Median Gaji WFO vs. WFH vs. Hybrid per Kategori (Glints_Job)")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif · 10 kategori peran terbanyak")
 
     try:
         fig10_bar, fig10_heat, m10 = fig_bq10(df_g)
