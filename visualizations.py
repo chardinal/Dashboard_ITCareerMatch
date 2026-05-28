@@ -236,9 +236,13 @@ def fig_bq4(df_glints: pd.DataFrame, min_listings: int = 5) -> tuple[go.Figure, 
     # Chart Bar 2 panel
     fig_bar = make_subplots(
         rows=1, cols=2,
-        subplot_titles=["🔼 10 Peran Gaji Tertinggi", "🔽 10 Peran Gaji Terendah"],
+        subplot_titles=["10 Peran Gaji Tertinggi", "10 Peran Gaji Terendah"],
         shared_xaxes=False
     )
+
+    # Hitung x-range + padding supaya label tidak terpotong/bertabrakan
+    top10_max = top10["median_gaji"].max() if not top10.empty else 1
+    bot10_max = bot10["median_gaji"].max() if not bot10.empty else 1
 
     fig_bar.add_trace(
         go.Bar(
@@ -247,7 +251,8 @@ def fig_bq4(df_glints: pd.DataFrame, min_listings: int = 5) -> tuple[go.Figure, 
             orientation="h",
             marker_color=COLOR_WFH,
             text=top10["median_gaji"].apply(_format_rp),
-            textposition="outside",
+            textposition="inside",
+            insidetextanchor="end",
             name="Tertinggi"
         ),
         row=1, col=1
@@ -260,7 +265,8 @@ def fig_bq4(df_glints: pd.DataFrame, min_listings: int = 5) -> tuple[go.Figure, 
             orientation="h",
             marker_color=COLOR_THRESHOLD,
             text=bot10["median_gaji"].apply(_format_rp),
-            textposition="outside",
+            textposition="inside",
+            insidetextanchor="end",
             name="Terendah"
         ),
         row=1, col=2
@@ -272,6 +278,9 @@ def fig_bq4(df_glints: pd.DataFrame, min_listings: int = 5) -> tuple[go.Figure, 
         height=560,
         showlegend=False
     )
+    # Tick sumbu X setiap 5 juta supaya lebih rapi
+    fig_bar.update_xaxes(tickformat=".0s", dtick=5_000_000, row=1, col=1)
+    fig_bar.update_xaxes(tickformat=".0s", dtick=5_000_000, row=1, col=2)
 
     # Box Plot
     df_filtered = df_salary[df_salary[GLINTS_ROLE_COL].isin(top10[GLINTS_ROLE_COL].tolist())]
@@ -331,15 +340,23 @@ def fig_bq5(df_cv: pd.DataFrame, df_job: pd.DataFrame) -> tuple[go.Figure, dict]
             marker_color=color
         ))
 
-    # Highlight selisih >15 poin
+    # Highlight selisih >15 poin — label diletakkan di sisi kanan bar tertinggi
     big_gap = combined[combined["Selisih"] > 15]
     for _, row in big_gap.iterrows():
+        y_top = max(row["Kandidat (CV)"], row["Syarat Lowongan (Job)"])
         fig.add_annotation(
             x=row["Pendidikan"],
-            y=max(row["Kandidat (CV)"], row["Syarat Lowongan (Job)"]) + 2,
+            y=y_top + 5,          # di atas bar tertinggi
             text=f"⚠ Gap {row['Selisih']:.1f}%",
-            showarrow=False,
-            font=dict(color=COLOR_THRESHOLD, size=11)
+            showarrow=True,
+            arrowhead=2,
+            arrowcolor=COLOR_THRESHOLD,
+            ay=-30,               # panah ke bawah menuju bar
+            font=dict(color=COLOR_THRESHOLD, size=11, weight="bold"),
+            bgcolor="rgba(30,30,60,0.75)",
+            bordercolor=COLOR_THRESHOLD,
+            borderwidth=1,
+            borderpad=3
         )
 
     fig.update_layout(
@@ -499,7 +516,8 @@ def fig_bq8(df_glints: pd.DataFrame) -> tuple[go.Figure, dict]:
     """
     BQ 8: Dominasi tipe waktu kerja (Penuh Waktu vs. lainnya) per kategori.
     Chart: 100% Stacked Horizontal Bar Chart.
-    Kolom: 'tipe_waktu_kerja' (aktual), 'kategori_peran'
+    Penuh Waktu selalu ditampilkan sebagai segmen pertama (kiri) agar mudah
+    dibandingkan dengan garis threshold 70%.
     Returns: (fig, metrics_dict)
     """
     pivot = (
@@ -513,15 +531,36 @@ def fig_bq8(df_glints: pd.DataFrame) -> tuple[go.Figure, dict]:
     totals = pivot.groupby(GLINTS_ROLE_COL)["Jumlah"].transform("sum")
     pivot_pct["Persen"] = (pivot["Jumlah"] / totals * 100).round(2)
 
-    # Sort kategori berdasarkan % Penuh Waktu (sesuai nilai aktual di data)
-    pt_pct = pivot_pct[
-        pivot_pct[GLINTS_WORK_TIME_COL].str.contains("Penuh Waktu", case=False, na=False)
-    ].set_index(GLINTS_ROLE_COL)["Persen"]
+    # % Penuh Waktu per kategori (untuk sort & outlier check)
+    pt_pct = (
+        pivot_pct[
+            pivot_pct[GLINTS_WORK_TIME_COL].str.contains("Penuh Waktu", case=False, na=False)
+        ]
+        .set_index(GLINTS_ROLE_COL)["Persen"]
+    )
 
-    sorted_roles = pt_pct.sort_values(ascending=True).index.tolist()
-    # Tambahkan kategori yang tidak punya Penuh Waktu sama sekali
+    # Kategori tanpa Penuh Waktu sama sekali → % = 0
     all_roles = pivot[GLINTS_ROLE_COL].unique().tolist()
-    sorted_roles = sorted_roles + [r for r in all_roles if r not in sorted_roles]
+    for r in all_roles:
+        if r not in pt_pct.index:
+            pt_pct[r] = 0.0
+
+    # Urutkan: % Penuh Waktu terendah di atas, tertinggi di bawah
+    sorted_roles = pt_pct.sort_values(ascending=True).index.tolist()
+
+    # Urutan tipe waktu: Penuh Waktu PERTAMA supaya segmennya paling kiri
+    # dan bisa langsung dibandingkan dengan garis 70%
+    all_time_types = pivot_pct[GLINTS_WORK_TIME_COL].unique().tolist()
+    penuh_waktu_labels = [t for t in all_time_types if "Penuh Waktu" in t]
+    other_labels = sorted([t for t in all_time_types if "Penuh Waktu" not in t])
+    ordered_time_types = penuh_waktu_labels + other_labels
+
+    # Warna: Penuh Waktu → biru mencolok, sisanya dari palet
+    color_map = {}
+    color_map[penuh_waktu_labels[0]] = COLOR_WFO  # biru
+    palette_rest = [c for c in COLOR_SEQ if c != COLOR_WFO]
+    for i, label in enumerate(other_labels):
+        color_map[label] = palette_rest[i % len(palette_rest)]
 
     fig = px.bar(
         pivot_pct,
@@ -534,17 +573,21 @@ def fig_bq8(df_glints: pd.DataFrame) -> tuple[go.Figure, dict]:
         title="BQ 8 — Komposisi Tipe Waktu Kerja per Kategori Peran (100%)",
         labels={"Persen": "Persentase (%)", GLINTS_ROLE_COL: "Kategori Peran",
                 GLINTS_WORK_TIME_COL: "Tipe Waktu Kerja"},
-        category_orders={GLINTS_ROLE_COL: sorted_roles},
-        color_discrete_sequence=COLOR_SEQ
+        category_orders={
+            GLINTS_ROLE_COL: sorted_roles,
+            GLINTS_WORK_TIME_COL: ordered_time_types   # Penuh Waktu selalu pertama
+        },
+        color_discrete_map=color_map
     )
     fig.add_vline(x=70, line_dash="dash", line_color=COLOR_THRESHOLD,
                   annotation_text="Threshold 70%", annotation_position="top right")
     fig.update_traces(texttemplate="%{text:.1f}%", textposition="inside")
     fig.update_layout(template=TEMPLATE, height=900)
 
+    # Outlier: semua kategori (termasuk yang % Penuh Waktu = 0) yang < 70%
     outlier_roles = pt_pct[pt_pct < 70].index.tolist()
     metrics = {
-        "total_roles": pivot[GLINTS_ROLE_COL].nunique(),
+        "total_roles": len(all_roles),
         "outlier_roles": outlier_roles,
         "dominasi_penuh": len(outlier_roles) == 0
     }
@@ -581,6 +624,8 @@ def fig_bq9(df_job: pd.DataFrame) -> tuple[go.Figure, go.Figure, dict]:
     )
 
     # Bar Chart: Top posisi dengan batasan
+    # Diurutkan ascending (terbanyak di bawah) agar warna gradien
+    # dan urutan bar konsisten — makin ke bawah makin banyak batasan
     top_positions = (
         df_job[df_job["has_restriction"]][JOB_POSITION_COL]
         .value_counts()
@@ -588,6 +633,8 @@ def fig_bq9(df_job: pd.DataFrame) -> tuple[go.Figure, go.Figure, dict]:
         .reset_index()
     )
     top_positions.columns = ["Posisi", "Jumlah Lowongan"]
+    # Sort ascending: terbanyak di baris terakhir → tampil di bawah chart horizontal
+    top_positions = top_positions.sort_values("Jumlah Lowongan", ascending=True).reset_index(drop=True)
 
     fig_bar = px.bar(
         top_positions,
@@ -597,7 +644,9 @@ def fig_bq9(df_job: pd.DataFrame) -> tuple[go.Figure, go.Figure, dict]:
         text="Jumlah Lowongan",
         title="BQ 9 — Top 15 Posisi dengan Batasan Gender/Usia",
         color="Jumlah Lowongan",
-        color_continuous_scale="Reds"
+        color_continuous_scale="Reds",
+        # Pertahankan urutan sorting (ascending) agar tidak di-override Plotly
+        category_orders={"Posisi": top_positions["Posisi"].tolist()}
     )
     fig_bar.update_traces(textposition="outside")
     fig_bar.update_layout(template=TEMPLATE, height=500, showlegend=False)

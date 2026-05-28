@@ -196,6 +196,20 @@ with st.sidebar:
     st.metric("Glints_Job", f"{len(df_glints):,} baris")
 
     st.markdown("---")
+    st.markdown(
+        """
+        <div style='background:rgba(99,102,241,0.12); border-left:3px solid #6366f1;
+                    border-radius:0 8px 8px 0; padding:0.6rem 0.8rem; margin-bottom:0.5rem;'>
+            <b style='color:#a5b4fc;'>Catatan Filter</b><br>
+            <span style='color:#94a3b8; font-size:0.8rem;'>
+                Filter di bawah hanya berlaku untuk data <b>Glints_Job</b>.<br>
+                BQ 1, 2, 5, 7, 9 menggunakan Dataset_CV / Dataset_Job dan
+                <u>tidak terpengaruh</u> oleh filter ini.
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     st.markdown("### Filter Kota (Glints)")
     all_cities = sorted(df_glints[_CITY_COL].dropna().unique().tolist())
     selected_cities = st.multiselect("Pilih kota (kosong = semua)", options=all_cities, default=[])
@@ -244,7 +258,7 @@ tabs = st.tabs(tab_labels)
 with tabs[0]:
     st.markdown('<span class="bq-badge">BQ 1</span>', unsafe_allow_html=True)
     st.subheader("Distribusi Tingkat Pendidikan Kandidat")
-    st.caption("Sumber: Dataset_CV")
+    st.caption("Sumber data: Dataset_CV · Tidak terpengaruh filter sidebar")
 
     fig1, m1 = fig_bq1(df_cv)
     st.plotly_chart(fig1, use_container_width=True)
@@ -270,7 +284,7 @@ with tabs[0]:
 with tabs[1]:
     st.markdown('<span class="bq-badge">BQ 2</span>', unsafe_allow_html=True)
     st.subheader("Distribusi Level Pengalaman yang Dibutuhkan Lowongan")
-    st.caption("Sumber: Dataset_Job")
+    st.caption("Sumber data: Dataset_Job · Tidak terpengaruh filter sidebar")
 
     fig2, m2 = fig_bq2(df_job)
     st.plotly_chart(fig2, use_container_width=True)
@@ -296,7 +310,7 @@ with tabs[1]:
 with tabs[2]:
     st.markdown('<span class="bq-badge">BQ 3</span>', unsafe_allow_html=True)
     st.subheader("Top 5 Kota & Komposisi Sistem Kerja (Glints_Job)")
-    st.caption("Filter aktif dari sidebar")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif")
 
     fig3, m3 = fig_bq3(df_g)
     st.plotly_chart(fig3, use_container_width=True)
@@ -317,7 +331,7 @@ with tabs[2]:
 with tabs[3]:
     st.markdown('<span class="bq-badge">BQ 4</span>', unsafe_allow_html=True)
     st.subheader("Median Gaji per Kategori Peran — Top 10 & Bottom 10")
-    st.caption("Hanya kategori ≥ n lowongan & menampilkan gaji · Filter aktif dari sidebar")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif · Hanya kategori ≥ n lowongan dengan data gaji")
 
     min_listing = st.slider("Minimal jumlah lowongan per kategori:", 2, 20, 5, key="bq4_slider")
 
@@ -349,7 +363,7 @@ with tabs[3]:
 with tabs[4]:
     st.markdown('<span class="bq-badge">BQ 5</span>', unsafe_allow_html=True)
     st.subheader("Gap Distribusi Pendidikan: Kandidat (CV) vs. Syarat Lowongan (Job)")
-    st.caption("Sumber: Dataset_CV & Dataset_Job")
+    st.caption("Sumber data: Dataset_CV & Dataset_Job · Tidak terpengaruh filter sidebar")
 
     fig5, m5 = fig_bq5(df_cv, df_job)
     st.plotly_chart(fig5, use_container_width=True)
@@ -377,7 +391,7 @@ with tabs[4]:
 with tabs[5]:
     st.markdown('<span class="bq-badge">BQ 6</span>', unsafe_allow_html=True)
     st.subheader("Top 15 Skill Paling Sering di Lowongan Glints")
-    st.caption("Filter aktif dari sidebar · Garis merah = threshold 30% (skill dominan pasar IT)")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif · Garis merah = threshold 30%")
 
     try:
         fig6, m6 = fig_bq6(df_g)
@@ -411,7 +425,7 @@ with tabs[5]:
 with tabs[6]:
     st.markdown('<span class="bq-badge">BQ 7</span>', unsafe_allow_html=True)
     st.subheader("Rata-rata Jumlah Skill per Bucket Pengalaman (Dataset_CV)")
-    st.caption("Sumber: Dataset_CV · Error bar = standar deviasi")
+    st.caption("Sumber data: Dataset_CV · Tidak terpengaruh filter sidebar · Error bar = standar deviasi")
 
     try:
         fig7, m7 = fig_bq7(df_cv)
@@ -446,7 +460,7 @@ with tabs[6]:
 with tabs[7]:
     st.markdown('<span class="bq-badge">BQ 8</span>', unsafe_allow_html=True)
     st.subheader("Dominasi Tipe Waktu Kerja per Kategori Peran (Glints_Job)")
-    st.caption("Filter aktif dari sidebar · Garis merah = threshold 70% Penuh Waktu")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif · Garis merah = threshold 70% Penuh Waktu")
 
     try:
         fig8, m8 = fig_bq8(df_g)
@@ -480,7 +494,7 @@ with tabs[7]:
 with tabs[8]:
     st.markdown('<span class="bq-badge">BQ 9</span>', unsafe_allow_html=True)
     st.subheader("Lowongan dengan Persyaratan Gender atau Usia Spesifik")
-    st.caption("Sumber: Dataset_Job · Threshold = 20% dari total lowongan")
+    st.caption("Sumber data: Dataset_Job · Tidak terpengaruh filter sidebar · Threshold = 20% dari total lowongan")
 
     try:
         fig9_pie, fig9_bar, m9 = fig_bq9(df_job)
@@ -521,7 +535,7 @@ with tabs[8]:
 with tabs[9]:
     st.markdown('<span class="bq-badge">BQ 10</span>', unsafe_allow_html=True)
     st.subheader("Perbandingan Median Gaji WFO vs. WFH vs. Hybrid per Kategori (Glints_Job)")
-    st.caption("10 kategori peran terbanyak · Filter aktif dari sidebar")
+    st.caption("Sumber data: Glints_Job · Filter sidebar aktif · 10 kategori peran terbanyak")
 
     try:
         fig10_bar, fig10_heat, m10 = fig_bq10(df_g)
