@@ -19,7 +19,7 @@ import streamlit as st
 # PATH KONFIGURASI
 # ─────────────────────────────────────────────────────────────────────────────
 
-DATA_DIR = r"D:\DBS_Foundation-2026\data_clean_DS"
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NAMA KOLOM — SESUAIKAN JIKA BERBEDA DENGAN DATA AKTUAL

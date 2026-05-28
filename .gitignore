@@ -13,11 +13,6 @@ __pycache__/
 .ipynb_checkpoints/
 notebooks/.ipynb_checkpoints/
 
-# Data files (jangan upload data ke GitHub)
-*.xlsx
-*.xls
-*.csv
-
 # OS files
 .DS_Store
 Thumbs.db
