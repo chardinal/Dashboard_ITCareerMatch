@@ -50,30 +50,32 @@ html, body, [class*="css"] {
 .brand-bar {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 20px;
     background: linear-gradient(135deg, #0d1b2a 0%, #1a2744 60%, #0f3460 100%);
-    padding: 1rem 2rem;
-    border-radius: 14px;
-    margin-bottom: 0.6rem;
-    border: 1px solid rgba(255,255,255,0.07);
+    padding: 1.8rem 2.8rem;
+    border-radius: 18px;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
 }
 .brand-bar img {
-    height: 52px;
-    width: 52px;
+    height: 68px;
+    width: 68px;
     object-fit: contain;
-    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
 }
 .brand-title {
-    font-size: 1.75rem;
+    font-size: 2.1rem;
     font-weight: 800;
     color: #e0f7fa;
     letter-spacing: -0.5px;
-    line-height: 1.1;
+    line-height: 1.15;
 }
 .brand-subtitle {
-    font-size: 0.82rem;
-    color: #78909c;
-    margin-top: 2px;
+    font-size: 0.9rem;
+    color: #90a4ae;
+    margin-top: 4px;
+    letter-spacing: 0.2px;
 }
 
 /* ── Metric cards ── */
@@ -113,13 +115,56 @@ html, body, [class*="css"] {
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0b1120 0%, #161b38 100%);
-    border-right: 1px solid rgba(99,102,241,0.18);
+    border-right: 1px solid rgba(99,102,241,0.22);
 }
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] label {
     color: #e2e8f0;
+}
+
+/* ── Sidebar section headings ── */
+.sidebar-heading {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #6366f1;
+    margin: 1rem 0 0.4rem 0;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid rgba(99,102,241,0.25);
+}
+
+/* ── BQ list in sidebar ── */
+.bq-list-item {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 0.45rem 0.6rem;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.2s;
+}
+.bq-list-item:hover {
+    background: rgba(99,102,241,0.12);
+}
+.bq-num {
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #818cf8;
+    background: rgba(99,102,241,0.2);
+    border-radius: 5px;
+    padding: 1px 6px;
+    margin-top: 1px;
+}
+.bq-text {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    line-height: 1.4;
 }
 
 /* ── BQ badge ── */
@@ -186,47 +231,79 @@ with st.spinner("Memuat dataset…"):
 # ── Sidebar Filters ───────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.markdown("## Filter & Info")
-    st.markdown("---")
+    # ── Main heading ──
+    st.markdown(
+        "<div style='font-size:1.1rem; font-weight:800; letter-spacing:1.5px; "
+        "text-transform:uppercase; color:#e2e8f0; padding: 0.6rem 0 0.2rem 0; "
+        "border-bottom: 2px solid rgba(99,102,241,0.5); margin-bottom:0.8rem;'>"
+        "🔍 FILTER &amp; INFO"
+        "</div>",
+        unsafe_allow_html=True
+    )
 
-    st.markdown("### Dataset Overview")
-    col_a, col_b = st.columns(2)
-    col_a.metric("Dataset_CV",  f"{len(df_cv):,} baris")
-    col_b.metric("Dataset_Job", f"{len(df_job):,} baris")
-    st.metric("Glints_Job", f"{len(df_glints):,} baris")
-
-    st.markdown("---")
+    # ── Catatan Filter ──
+    st.markdown('<div class="sidebar-heading">ℹ️ CATATAN FILTER</div>', unsafe_allow_html=True)
     st.markdown(
         """
-        <div style='background:rgba(99,102,241,0.12); border-left:3px solid #6366f1;
-                    border-radius:0 8px 8px 0; padding:0.6rem 0.8rem; margin-bottom:0.5rem;'>
-            <b style='color:#a5b4fc;'>Catatan Filter</b><br>
-            <span style='color:#94a3b8; font-size:0.8rem;'>
-                Filter di bawah hanya berlaku untuk data <b>Glints_Job</b>.<br>
-                BQ 1, 2, 5, 7, 9 menggunakan Dataset_CV / Dataset_Job dan
-                <u>tidak terpengaruh</u> oleh filter ini.
+        <div style='background:rgba(99,102,241,0.10); border-left:3px solid #6366f1;
+                    border-radius:0 10px 10px 0; padding:0.7rem 0.9rem; margin-bottom:0.6rem;'>
+            <span style='color:#94a3b8; font-size:0.78rem; line-height:1.5;'>
+                Filter berikut hanya berlaku untuk data <b style='color:#a5b4fc;'>Glints_Job</b>.<br>
+                <span style='color:#64748b;'>BQ 1, 2, 5, 7, 9 tidak terpengaruh filter ini.</span>
             </span>
         </div>
         """,
         unsafe_allow_html=True
     )
-    st.markdown("### Filter Kota (Glints)")
+
+    # ── Filter Kota ──
+    st.markdown('<div class="sidebar-heading">🏙️ FILTER KOTA (GLINTS)</div>', unsafe_allow_html=True)
     all_cities = sorted(df_glints[_CITY_COL].dropna().unique().tolist())
     selected_cities = st.multiselect("Pilih kota (kosong = semua)", options=all_cities, default=[])
 
-    st.markdown("### Filter Kategori Peran (Glints)")
+    # ── Filter Kategori Peran ──
+    st.markdown('<div class="sidebar-heading">🎯 FILTER KATEGORI PERAN (GLINTS)</div>', unsafe_allow_html=True)
     all_roles = sorted(df_glints[GLINTS_ROLE_COL].dropna().unique().tolist())
     selected_roles = st.multiselect("Pilih kategori peran (kosong = semua)", options=all_roles, default=[])
 
-    st.markdown("### Filter Sistem Kerja (Glints)")
+    # ── Filter Sistem Kerja ──
+    st.markdown('<div class="sidebar-heading">💼 FILTER SISTEM KERJA (GLINTS)</div>', unsafe_allow_html=True)
     all_worksys = sorted(df_glints[_WORKSYS_COL].dropna().unique().tolist())
     selected_worksys = st.multiselect("Pilih sistem kerja (kosong = semua)", options=all_worksys, default=[])
 
-    st.markdown("---")
     st.markdown(
-        "<small style='color:#4a5568'>Filter berlaku pada BQ 3, 4, 6, 8, 10</small>",
+        "<div style='font-size:0.7rem; color:#4a5568; margin-top:0.3rem; padding: 0.3rem 0.2rem; "
+        "border-top:1px solid rgba(255,255,255,0.05);'>✅ Filter berlaku pada <b>BQ 3, 4, 6, 8, 10</b></div>",
         unsafe_allow_html=True
     )
+
+    st.markdown("<hr style='border-top:1px solid rgba(255,255,255,0.07); margin:1rem 0;'>", unsafe_allow_html=True)
+
+    # ── Daftar Business Questions ──
+    st.markdown('<div class="sidebar-heading">📋 DAFTAR BUSINESS QUESTIONS</div>', unsafe_allow_html=True)
+
+    bq_list = [
+        ("BQ 1", "Distribusi tingkat pendidikan kandidat (Dataset_CV) — apakah S1 mendominasi >50%?"),
+        ("BQ 2", "Persen lowongan entry-level (0–2 th) vs mid-level (2–5 th) & senior (5+ th) di Dataset_Job — apakah entry-level >40%?"),
+        ("BQ 3", "Top 5 kota terbanyak di Glints_Job & komposisi sistem kerja (WFO/WFH/Hybrid) di masing-masing kota."),
+        ("BQ 4", "10 peran dengan median gaji tertinggi & terendah dari kategori ≥5 lowongan di Glints_Job (diluar yang tidak menampilkan gaji)."),
+        ("BQ 5", "Perbandingan distribusi pendidikan kandidat (Dataset_CV) vs syarat lowongan (Dataset_Job) — level mana selisihnya >15 poin?"),
+        ("BQ 6", "15 skill paling sering di Glints_Job — adakah 1 skill yang muncul >30% dari total lowongan?"),
+        ("BQ 7", "Rata-rata jumlah skill per bucket pengalaman di Dataset_CV — apakah senior (5+ th) ≥2x lebih banyak skill dari entry-level (0–1 th)?"),
+        ("BQ 8", "Apakah Penuh Waktu mendominasi >70% di setiap kategori Glints_Job, atau ada yang didominasi Magang/Freelance/Kontrak?"),
+        ("BQ 9", "Persen lowongan Dataset_Job yang mencantumkan syarat gender/usia spesifik — posisi paling sering & apakah melebihi 20%?"),
+        ("BQ 10", "Perbandingan median gaji WFO vs WFH vs Hybrid di 10 kategori peran terbanyak Glints_Job."),
+    ]
+
+    bq_html = ""
+    for num, text in bq_list:
+        bq_html += (
+            f"<div class='bq-list-item'>"
+            f"<span class='bq-num'>{num}</span>"
+            f"<span class='bq-text'>{text}</span>"
+            f"</div>"
+        )
+    st.markdown(bq_html, unsafe_allow_html=True)
 
 # Terapkan filter
 df_g = df_glints.copy()
