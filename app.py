@@ -16,16 +16,12 @@ from visualizations import (
     fig_bq6, fig_bq7, fig_bq8, fig_bq9, fig_bq10
 )
 
-# ── Page Config ──────────────────────────────────────────────────────────────
-
 st.set_page_config(
     page_title="ITCareerMatch — Recruitment Analytics",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# ── Helper: encode logo ───────────────────────────────────────────────────────
 
 def get_logo_b64(path: str) -> str:
     if os.path.exists(path):
@@ -36,8 +32,6 @@ def get_logo_b64(path: str) -> str:
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "logo_capstone.png")
 logo_b64  = get_logo_b64(LOGO_PATH)
 
-# ── Custom CSS ────────────────────────────────────────────────────────────────
-
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
@@ -46,7 +40,6 @@ html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
 }
 
-/* ── Topbar brand ── */
 .brand-bar {
     display: flex;
     align-items: center;
@@ -78,7 +71,6 @@ html, body, [class*="css"] {
     letter-spacing: 0.2px;
 }
 
-/* ── Metric cards ── */
 [data-testid="metric-container"] {
     background: linear-gradient(135deg, #1a1a3e, #22224a);
     border: 1px solid rgba(99,102,241,0.28);
@@ -95,7 +87,6 @@ html, body, [class*="css"] {
     font-size: 0.8rem;
 }
 
-/* ── Tabs ── */
 [data-baseweb="tab-list"] { gap: 5px; }
 [data-baseweb="tab"] {
     background: rgba(255,255,255,0.04);
@@ -112,7 +103,6 @@ html, body, [class*="css"] {
     border: none !important;
 }
 
-/* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0b1120 0%, #161b38 100%);
     border-right: 1px solid rgba(99,102,241,0.22);
@@ -124,7 +114,6 @@ html, body, [class*="css"] {
     color: #e2e8f0;
 }
 
-/* ── Sidebar section headings ── */
 .sidebar-heading {
     font-size: 0.7rem;
     font-weight: 700;
@@ -136,7 +125,6 @@ html, body, [class*="css"] {
     border-bottom: 1px solid rgba(99,102,241,0.25);
 }
 
-/* ── BQ question card (per tab) ── */
 .bq-question-card {
     background: linear-gradient(135deg, rgba(99,102,241,0.13), rgba(139,92,246,0.08));
     border: 1px solid rgba(99,102,241,0.30);
@@ -161,7 +149,6 @@ html, body, [class*="css"] {
     line-height: 1.55;
 }
 
-/* ── BQ badge ── */
 .bq-badge {
     display: inline-block;
     background: linear-gradient(90deg, #5c5ff5, #8b5cf6);
@@ -174,7 +161,6 @@ html, body, [class*="css"] {
     letter-spacing: 0.5px;
 }
 
-/* ── Conclusion box ── */
 .conclusion-box {
     background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.07));
     border-left: 4px solid #6366f1;
@@ -193,8 +179,6 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Header / Brand Bar ────────────────────────────────────────────────────────
-
 logo_tag = f'<img src="data:image/png;base64,{logo_b64}" />' if logo_b64 else ""
 
 st.markdown(f"""
@@ -206,8 +190,6 @@ st.markdown(f"""
     </div>
 </div>
 """, unsafe_allow_html=True)
-
-# ── Load Data ─────────────────────────────────────────────────────────────────
 
 @st.cache_data(show_spinner=False)
 def get_all_data():
@@ -222,10 +204,7 @@ with st.spinner("Memuat dataset…"):
         st.info("Pastikan folder `D:\\DBS_Foundation-2026\\data_clean_DS` berisi file Dataset_CV, Dataset_Job, dan Glints_Job.")
         st.stop()
 
-# ── Sidebar Filters ───────────────────────────────────────────────────────────
-
 with st.sidebar:
-    # ── Main heading ──
     st.markdown(
         "<div style='font-size:1.1rem; font-weight:800; letter-spacing:1.5px; "
         "text-transform:uppercase; color:#e2e8f0; padding: 0.6rem 0 0.2rem 0; "
@@ -235,7 +214,6 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    # ── Catatan Filter ──
     st.markdown('<div class="sidebar-heading">ℹ️ CATATAN FILTER</div>', unsafe_allow_html=True)
     st.markdown(
         """
@@ -250,17 +228,14 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    # ── Filter Kota ──
     st.markdown('<div class="sidebar-heading">🏙️ FILTER KOTA (GLINTS)</div>', unsafe_allow_html=True)
     all_cities = sorted(df_glints[_CITY_COL].dropna().unique().tolist())
     selected_cities = st.multiselect("Pilih kota (kosong = semua)", options=all_cities, default=[])
 
-    # ── Filter Kategori Peran ──
     st.markdown('<div class="sidebar-heading">🎯 FILTER KATEGORI PERAN (GLINTS)</div>', unsafe_allow_html=True)
     all_roles = sorted(df_glints[GLINTS_ROLE_COL].dropna().unique().tolist())
     selected_roles = st.multiselect("Pilih kategori peran (kosong = semua)", options=all_roles, default=[])
 
-    # ── Filter Sistem Kerja ──
     st.markdown('<div class="sidebar-heading">💼 FILTER SISTEM KERJA (GLINTS)</div>', unsafe_allow_html=True)
     all_worksys = sorted(df_glints[_WORKSYS_COL].dropna().unique().tolist())
     selected_worksys = st.multiselect("Pilih sistem kerja (kosong = semua)", options=all_worksys, default=[])
@@ -273,7 +248,6 @@ with st.sidebar:
 
     st.markdown("<hr style='border-top:1px solid rgba(255,255,255,0.07); margin:1rem 0;'>", unsafe_allow_html=True)
 
-# Terapkan filter
 df_g = df_glints.copy()
 if selected_cities:
     df_g = df_g[df_g[_CITY_COL].isin(selected_cities)]
@@ -281,8 +255,6 @@ if selected_roles:
     df_g = df_g[df_g[GLINTS_ROLE_COL].isin(selected_roles)]
 if selected_worksys:
     df_g = df_g[df_g[_WORKSYS_COL].isin(selected_worksys)]
-
-# ── Tabs ──────────────────────────────────────────────────────────────────────
 
 tab_labels = [
     "BQ1 · Pendidikan CV",
@@ -299,7 +271,6 @@ tab_labels = [
 
 tabs = st.tabs(tab_labels)
 
-# ── Tab 1 — BQ 1 ──────────────────────────────────────────────────────────────
 with tabs[0]:
     st.markdown('<span class="bq-badge">BQ 1</span>', unsafe_allow_html=True)
     st.markdown(
@@ -332,7 +303,6 @@ with tabs[0]:
         - Recruiter sebaiknya tidak over-filter pada gelar jika fokus pada skill.
         """)
 
-# ── Tab 2 — BQ 2 ──────────────────────────────────────────────────────────────
 with tabs[1]:
     st.markdown('<span class="bq-badge">BQ 2</span>', unsafe_allow_html=True)
     st.markdown(
@@ -365,7 +335,6 @@ with tabs[1]:
         - Kandidat 2–5 tahun pengalaman bisa menjadi "sweet spot" rekrutmen.
         """)
 
-# ── Tab 3 — BQ 3 ──────────────────────────────────────────────────────────────
 with tabs[2]:
     st.markdown('<span class="bq-badge">BQ 3</span>', unsafe_allow_html=True)
     st.markdown(
@@ -393,7 +362,6 @@ with tabs[2]:
         - Kandidat di luar Jabodetabek bisa menargetkan lowongan WFH/Hybrid.
         """)
 
-# ── Tab 4 — BQ 4 ──────────────────────────────────────────────────────────────
 with tabs[3]:
     st.markdown('<span class="bq-badge">BQ 4</span>', unsafe_allow_html=True)
     st.markdown(
@@ -432,7 +400,6 @@ with tabs[3]:
         - Kandidat dapat menggunakan data ini untuk benchmark ekspektasi gaji.
         """)
 
-# ── Tab 5 — BQ 5 ──────────────────────────────────────────────────────────────
 with tabs[4]:
     st.markdown('<span class="bq-badge">BQ 5</span>', unsafe_allow_html=True)
     st.markdown(
@@ -467,7 +434,6 @@ with tabs[4]:
         - Informasi ini berguna untuk lembaga pendidikan dan pembuat kebijakan ketenagakerjaan.
         """)
 
-# ── Tab 6 — BQ 6 ──────────────────────────────────────────────────────────────
 with tabs[5]:
     st.markdown('<span class="bq-badge">BQ 6</span>', unsafe_allow_html=True)
     st.markdown(
@@ -508,7 +474,6 @@ with tabs[5]:
         - Lembaga pelatihan bisa gunakan data ini sebagai kurikulum prioritas.
         """)
 
-# ── Tab 7 — BQ 7 ──────────────────────────────────────────────────────────────
 with tabs[6]:
     st.markdown('<span class="bq-badge">BQ 7</span>', unsafe_allow_html=True)
     st.markdown(
@@ -550,7 +515,6 @@ with tabs[6]:
         - Data berguna untuk desain program mentoring & jenjang karir.
         """)
 
-# ── Tab 8 — BQ 8 ──────────────────────────────────────────────────────────────
 with tabs[7]:
     st.markdown('<span class="bq-badge">BQ 8</span>', unsafe_allow_html=True)
     st.markdown(
@@ -591,7 +555,6 @@ with tabs[7]:
         - Kontrak tinggi bisa mengindikasikan pekerjaan musiman atau project IT.
         """)
 
-# ── Tab 9 — BQ 9 ──────────────────────────────────────────────────────────────
 with tabs[8]:
     st.markdown('<span class="bq-badge">BQ 9</span>', unsafe_allow_html=True)
     st.markdown(
@@ -639,7 +602,6 @@ with tabs[8]:
         - Data ini penting untuk laporan Diversity & Inclusion (D&I) dalam HR analytics.
         """)
 
-# ── Tab 10 — BQ 10 ───────────────────────────────────────────────────────────
 with tabs[9]:
     st.markdown('<span class="bq-badge">BQ 10</span>', unsafe_allow_html=True)
     st.markdown(
@@ -678,8 +640,6 @@ with tabs[9]:
         - WFO lebih rendah bisa berarti perusahaan menganggap kehadiran fisik sebagai standar.
         - Kandidat bisa negosiasi gaji lebih tinggi untuk posisi WFO yang mengharuskan commute.
         """)
-
-# ── Footer ────────────────────────────────────────────────────────────────────
 
 st.markdown("---")
 st.markdown(
