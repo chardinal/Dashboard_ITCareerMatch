@@ -19,7 +19,7 @@ from visualizations import (
 # Page Config
 
 st.set_page_config(
-    page_title="ITCareerMatch — Recruitment Analytics",
+    page_title="ITCareerMatch - Recruitment Analytics",
     page_icon="chart_with_upwards_trend",
     layout="wide",
     initial_sidebar_state="expanded"
